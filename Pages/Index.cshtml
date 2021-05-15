@@ -1,0 +1,204 @@
+﻿@page
+@{}
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>News</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body>
+
+    <div>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+            <a class="navbar-brand" href="#">Daily News</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarText">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <button class="btn btn-danger" data-toggle="modal" data-target="#addNews">Add News</button>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <br />
+        <br />
+        <div class="container">
+            <div id="news">
+            </div>
+        </div>
+    </div>
+    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.0.3.min.js"></script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery.templates/beta1/jquery.tmpl.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script>
+        var uri = 'api/Reports';
+        $(document).ready(function () {
+            $.getJSON(uri)
+                .done(function (data) {
+                    $("#newsView").tmpl(data).appendTo("#news");
+                });
+        });
+        function getNews() {
+            $.getJSON(uri)
+                .done(function (data) {
+                    $("#news").text("");
+                    $("#newsView").tmpl(data).appendTo("#news");
+                });
+        }
+        function addNews() {
+            var _newsHeadline = $('#newsHeadline').val();
+            var _detail = $('#detail').val();
+            var _published = $('#published').val();
+            var news = {
+                newsHeadline: _newsHeadline,
+                detail: _detail,
+                published: _published
+            };
+            $.ajax({
+                type: "POST",
+                url: uri,
+                data: JSON.stringify(news),
+                contentType: "application/json; charset=utf-8"
+            }).done(function (response) {
+                $("#result").html("Added News Item");
+                getNews();
+            }).fail(function (jqXHR, textStatus) {
+                $("#result").html("FAILED .");
+            });
+        }
+        function updateNews() {
+            var _newsHeadline = $('#_newsHeadline').val();
+            var _detail = $('#_detail').val();
+            var _published = $('#_published').val();
+            var news = {
+                id: parseInt($('#_id').val()),
+                newsHeadline: _newsHeadline,
+                detail: _detail,
+                published: _published
+            };
+            $.ajax({
+                type: "PUT",
+                url: uri + "/" + $('#_id').val(),
+                data: JSON.stringify(news),
+                contentType: "application/json; charset=utf-8"
+            }).done(function (response) {
+                $("#resultUpdate").html("Updated News");
+                getNews();
+            }).fail(function (jqXHR, textStatus) {
+                $("#resultUpdate").html("FAILED");
+            });;
+        }
+        function remove(id) {
+            var yes = confirm("deleting please confirm ?");
+            if (yes) {
+                $.ajax({
+                    type: "DELETE",
+                    url: uri + "/" + id,
+                }).done(function (response) {
+                    getNews();
+                });
+            }
+        }
+        function getNewsForId(id) {
+            $.ajax({
+                type: "GET",
+                url: uri + "/" + id,
+                contentType: "application/json"
+            }).done(function (response) {
+                $('#_id').val(response.id);
+                $('#_newsHeadline').val(response.newsHeadline);
+                $('#_detail').val(response.detail);
+                $('#_published').val(response.published);
+            });
+        }
+    </script>
+    <script id="newsView" type="text/x-jquery-tmpl">
+        <div class="card border-secondary mb-3">
+            <div class="card-header"><h2>${newsHeadline}</h2></div>
+            <div class="card-body text-secondary">
+                <h6 class="card-title">Published ${published}</h6>
+                <p class="card-text">${detail}</p>
+            </div>
+            <button class="btn btn-primary" onclick="getNewsForId('${id}')" data-toggle="modal" data-target="#updateNews">Update</button>
+            <a href="#" class="btn btn-danger" onclick="remove('${id}')">Delete</a>
+        </div>
+    </script>
+    <div class="modal" tabindex="-1" role="dialog" id="addNews">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Publish News</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label for="name">Headline</label>
+                            <input type="text" class="form-control" id="newsHeadline">
+                        </div>
+                        <div class="form-group">
+                            <label for="model">Detail</label>
+                            <input type="text" class="form-control" id="detail">
+                        </div>
+                        <div class="form-group">
+                            <label for="model">Published Date</label>
+                            <input type="datetime-local" class="form-control" id="published">
+                        </div>
+                        <div class="form-group" id="result">
+                        </div>
+                        <button type="button" onclick="addNews()" class="btn btn-primary">Publish</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" tabindex="-1" role="dialog" id="updateNews">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update News</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <input type="hidden" class="form-control" id="_id">
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Headline</label>
+                            <input type="text" class="form-control" id="_newsHeadline">
+                        </div>
+                        <div class="form-group">
+                            <label for="model">Detail</label>
+                            <input type="text" class="form-control" id="_detail">
+                        </div>
+                        <div class="form-group">
+                            <label for="model">Published Date</label>
+                            <input type="datetime-local" class="form-control" id="_published">
+                        </div>
+                        <div class="form-group" id="resultUpdate">
+                        </div>
+                        <button type="button" onclick="updateNews()" class="btn btn-primary">Re-Publish</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p style="text-align:center; color:red;">Developed By: Gurjinder Singh</p>
+    </footer>
+</body>
+</html>
